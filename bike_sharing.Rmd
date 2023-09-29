@@ -139,7 +139,7 @@ total_trip <- trip_data %>% summarise( count = n())
 total_trip
 ```
 
-The total trip counts in the dataset for the whole year (i.e 2021) is 5,667,717.
+The total trip counts in the dataset for the whole year (i.e 2022) is 5,667,717.
 
 ### Trip counts by different subscribers
 
