@@ -1,0 +1,522 @@
+---
+title: "Bike-Share Analysis"
+author: "Taofeeqoh"
+date: "2023-09-25"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+
+# About the Case Study
+
+This case study is a cap stone project in partial fulfillment of Google Data Analytics Certificate. The dataset was provided by Cyclistic Marketing Team. Cyclistic is a bike-share program that features more than 5,800 bicycles and 600 docking stations. Cyclistic sets itself apart by also offering reclining bikes, hand tricycles, and cargo bikes, making bike-share more inclusive to people with disabilities and riders who can’t use a standard two-wheeled bike. The majority of riders opt for traditional bikes; about 8% of riders use the assistive options. Cyclistic users are more likely to ride for leisure, but about 30% use them to commute to work each
+day
+
+This case study involves analyzing 12-months period Cyclistics historical bike trip dataset which range between jan 2022 and dec 2022 to identify trends for the marketing analyst team in the direction of understanding how casual riders and annual members use Cyclistics bike differently, so as to make recommendations backed up with compelling data insights and professional data visualization which will be used to design a new marketing strategy with the aim of maximizing the number of annual memberships for the company’s future success.
+
+# Documentation of the Analysis Process
+
+*Data collection
+*Data cleaning
+*Data manipulation
+*Data aggregation
+*Data visualization
+*Draw conclusion and share suggestions
+
+I used R for this project because it allows me to collect the dataset together as it is in different file, clean, manipulate, transform, visualize and create report in one environment. It also allows me to include my code in the report.
+
+
+The necessary packages needed to work with the data in this environment has been loaded. the packages include; tidyverse,dplyr,lubridate,ggplot2.
+```{r}
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+library(stats)
+library(lubridate)
+library(readr)
+library(tinytex)
+```
+
+# Data Collection
+
+## Importing and appending the datasets
+* The datasets are in csv format, hence, i use read_csv() function to import the dataset and append using rbind() function
+
+```{r}
+df1 <- read_csv("202201-divvy-tripdata.csv")
+df2 <- read_csv("202202-divvy-tripdata.csv")
+df3 <- read_csv("202203-divvy-tripdata.csv")
+df4 <- read_csv("202204-divvy-tripdata.csv")
+df5 <- read_csv("202205-divvy-tripdata.csv")
+df6 <- read_csv("202206-divvy-tripdata.csv")
+df7 <- read_csv("202207-divvy-tripdata.csv")
+df8 <- read_csv("202208-divvy-tripdata.csv")
+df9 <- read_csv("202209-divvy-tripdata.csv")
+df10 <- read_csv("202210-divvy-tripdata.csv")
+df11 <- read_csv("202211-divvy-tripdata.csv")
+df12 <- read_csv("202212-divvy-tripdata.csv")
+```
+
+*combining the dataset by appending the rows together using rbind() function
+
+```{r}
+divvy_tripdata_2022 <- rbind(df1,df2,df3,df4,df5,df6,df7,df8,df9,df10,df11,df12)
+```
+
+* inspecting the combined dataset using head() function, summary()function
+```{r}
+head(divvy_tripdata_2022)
+```
+
+
+```{r}
+summary(divvy_tripdata_2022)
+```
+
+# Data Cleaning
+
+* There is a need to remove columns that are not needed in our analysis
+
+```{r}
+trip_data <- divvy_tripdata_2022 %>% 
+  select(-start_station_name,-start_station_id,-start_lat,-start_lng,-end_station_name,-end_station_id,-end_lat,-end_lng)
+
+trip_data
+```
+
+* Renaming the started_at,ended_at and member_casual column
+
+```{r}
+trip_data <- trip_data %>%
+  rename(bicycle_type = rideable_type, start_time = started_at, end_time = ended_at, subscribers = member_casual)
+```
+
+
+```{r}
+glimpse(trip_data)
+```
+
+# Data Manipulation
+
+*For easy analysis there is a need to extract the month, day and hours of the day from the start_time column
+
+```{r}
+trip_data <- trip_data %>% 
+  mutate(months = month(start_time, label = TRUE))
+
+trip_data <- trip_data %>% 
+  mutate(days_of_the_week = weekdays(start_time))
+
+trip_data <- trip_data %>% 
+  mutate(hours_of_the_day = hour(start_time))
+```
+
+# Data Aggregation
+
+The data is now ready for analysis after cleaning and removing unwanted columns. The insights will be obtained by performing data aggregation on the dataset. The following are the insights that will be identified.
+
+*Trip counts for the whole year
+*Trip counts by different subscribers
+*Trip counts by distinct bicycle
+*Aggregate count of rides taken by various subscribers using distinct bicycles
+*Total trip counts on a monthly basis
+*Aggregate Counts of trips made by different subscribers on a monthly basis
+*Trip counts per day
+*Total number of trips made by different subscribers on a daily basis
+*Aggregate trip counts made by different subscriber during each hour of the day
+*Average Duration of trips for different subscribers
+*Average Duration of trips on a daily basis
+*Average Duration of trips for different subscriber on a daily basis
+*Average Duration of trips on a monthly basis
+*Average Duration of trips for different subscriber on a monthly basis
+*Average Duration of rides with distinct bicycle
+*Average Duration of trips for different subscriber with distinct bicycle
+
+### Trip counts for the whole year
+```{r}
+total_trip <- trip_data %>% summarise( count = n())
+total_trip
+```
+
+The total trip counts in the dataset for the whole year (i.e 2021) is 5,667,717.
+
+### Trip counts by different subscribers
+
+```{r}
+total_trip_by_subscribers <- trip_data %>% count(subscribers)
+
+total_trip_by_subscribers
+```
+
+The number of annual subscriber have a high trip count of 3,345,685 compared to 2,322,032 trip counts of the casual rider. which shows that there are more trip counts from the anual subscriber than the casual riders.  
+
+### Trip count by distinct bicycle
+```{r}
+total_trip_with_bicycle_type <- trip_data %>% count(bicycle_type)
+
+total_trip_with_bicycle_type
+```
+
+electric bike is the most used bike with the ride of 2,889,029, which is followed by the classic bike with ride of 2,601,214 counts and the least used bike is the docked bike with ride of 177,474 counts.
+
+### Aggregate count of rides taken by various subscribers using distinct bicycles
+```{r}
+subscriber_with_bicycle_type <- trip_data %>% group_by(subscribers) %>% count(bicycle_type)
+
+subscriber_with_bicycle_type
+```
+
+The annual subscribers does not use docked bike, only the electric bike and the classic bike are used by the annual subscribers while the casual riders are the make use of all bike type
+
+### Total trip counts on a monthly basis
+```{r}
+total_trip_by_months <- trip_data %>% count(months)
+
+total_trip_by_months
+```
+
+There is a spike in the number of trips from june to september. To investigate the cause of the high increase in the trip count, we will obtain the counts of trips made by different subscribers on a monthly basis
+
+### Aggregate Counts of trips made by different subscribers on a monthly basis
+```{r}
+subscriber_by_month <- trip_data %>% group_by(subscribers) %>% count(months) %>% arrange(months)
+
+subscriber_by_month
+```
+
+There is high counts of trip by annual member from june to september
+
+### Trip counts per day
+```{r}
+total_trip_by_days <- trip_data %>% count(days_of_the_week)
+
+total_trip_by_days
+```
+
+There is high number of trip counts thursday, friday and saturday.
+
+###Total number of trips made by different subscribers on a daily basis
+```{r}
+subscriber_by_days <- trip_data %>% group_by(subscribers) %>% count(days_of_the_week) %>% arrange(days_of_the_week)
+
+subscriber_by_days
+```
+
+
+
+### Aggregate trip counts made by different subscriber during each hour of the day 
+```{r}
+subscriber_by_hours <- trip_data %>% group_by(subscribers) %>% count(hours_of_the_day) %>% arrange(hours_of_the_day)
+
+subscriber_by_hours
+```
+
+### Aggregate trip counts during each hour of the day 
+```{r}
+trip_count_by_hours <- trip_data %>% count(hours_of_the_day) %>% arrange(hours_of_the_day)
+
+trip_count_by_hours
+```
+
+There is a high counts of trip between the hours of 16 to 18 (i.e between 4pm to 6pm)
+
+### Average Duration of trips for different subscribers(minutes)
+```{r}
+avg_duration_by_subscribers <- trip_data %>% group_by(subscribers) %>%
+  summarise(avg_trip_length = mean(minute(seconds_to_period(end_time-start_time))))
+
+avg_duration_by_subscribers
+```
+
+There is high ride duration by the casual rider with average ride duration of 15.7 mins than the annual subscriber with the average ride duration of 11.1 mins. The casual rider have more rides than the annual subscribers.
+
+### Average Duration of trips on a daily basis
+```{r}
+avg_daily_trip_length <- trip_data %>% group_by(days_of_the_week) %>%
+  summarise(avg_trip_length = mean(minute(seconds_to_period(end_time-start_time))))
+
+avg_daily_trip_length
+```
+
+There are high duration of rides on Saturday and Sunday with average trip length of 14.4mins and 147mins respectively.
+
+### Average Duration of trips for different subscriber on a daily basis
+```{r}
+avg_daily_trip_length_by_subscribers <- trip_data %>% group_by(subscribers,days_of_the_week) %>% 
+  summarise(avg_trip_length =mean(minute(seconds_to_period(end_time-start_time)))) %>% 
+    arrange(days_of_the_week)
+
+avg_daily_trip_length_by_subscribers
+```
+
+There is high duration of rides by the casual riders on Saturday and Sunday with average trip length of 17.2mins both.
+
+### Average Duration of trips on a monthly basis
+```{r}
+avg_monthly_trip_length <- trip_data %>% group_by(months) %>%
+  summarise(avg_trip_length = mean(minute(seconds_to_period(end_time-start_time)))) %>% 
+  arrange(months)
+
+avg_monthly_trip_length
+```
+
+There is high ride duration in May, June and July with average trip length of 14.3mins, 14.4mins, 14.3mins respectively.
+
+### Average Duration of trips for different subscriber on a monthly basis
+```{r}
+avg_monthly_trip_length_by_subscribers <- trip_data %>% group_by(subscribers,months) %>% 
+  summarise(avg_trip_length =mean(minute(seconds_to_period(end_time-start_time)))) %>% 
+    arrange(months)
+
+avg_monthly_trip_length_by_subscribers
+```
+
+### Average Duration of trips during each hour of the day
+```{r}
+avg_hourly_trip_length <- trip_data %>% group_by(hours_of_the_day) %>%
+  summarise(avg_trip_length = mean(minute(seconds_to_period(end_time-start_time)))) %>% 
+  arrange(hours_of_the_day)
+
+avg_hourly_trip_length
+```
+
+
+### Average Duration of trips for different subscriber during each hour of the day
+```{r}
+avg_hourly_trip_length_by_subscribers <- trip_data %>% group_by(subscribers,hours_of_the_day) %>% 
+  summarise(avg_trip_length =mean(minute(seconds_to_period(end_time-start_time)))) %>% 
+    arrange(hours_of_the_day)
+
+avg_hourly_trip_length_by_subscribers
+```
+
+
+
+
+There are high ride duration in May, June, July by casual riders.
+
+### Average Duration of rides made with distinct bicycle
+```{r}
+avg_trip_length_by_bicycle_type <- trip_data %>% 
+  group_by(bicycle_type) %>% 
+  summarise(avg_trip_length =mean(minute(seconds_to_period(end_time-start_time))))
+
+avg_trip_length_by_bicycle_type
+```
+
+
+
+
+### Average Duration of trips for different subscriber with distinct bicycle
+```{r}
+avg_trip_length_by_bicycle_subscriber <- trip_data %>%
+  group_by(subscribers,bicycle_type) %>% 
+  summarise(avg_trip_length =mean(minute(seconds_to_period(end_time-start_time))))
+
+avg_trip_length_by_bicycle_subscriber
+```
+
+The docked bike rode by the casual rider have a high ride duration of average trip length of 17mins compare to the annual member rides with average trip length of 11.9mins
+
+
+# Data Visualization
+
+Now is the moment to create visual representations that will help the team comprehend the insights derived from data cleaning, manipulation, and aggregation. These visuals will enable the team to make more informed decisions.
+
+The following are the visuals that will be created;
+
+```{r}
+options(scipen=999)
+```
+
+
+```{r}
+ggplot(total_trip_by_subscribers) + 
+  geom_col(aes(x=subscribers,y=n, fill=subscribers)) +
+  labs(x = "Subscribers", y = "Trip Counts", title = "Trip counts by each Subscriber", fill = "Subscribers")
+```
+
+The visual show that the annual subscribers have more trip compared with the casual rider 
+
+```{r}
+ggplot(total_trip_with_bicycle_type) + 
+  geom_col(aes(x=bicycle_type,y=n, fill=bicycle_type)) +
+  labs(x = "Bicycle type", y = "Trip Counts", title = "Trip counts by distinct bicycle", fill = "Bicycle Type")
+```
+
+
+```{r}
+ggplot(subscriber_with_bicycle_type) + 
+  geom_col(aes(x=bicycle_type,y=n, fill=subscribers), position = "dodge") +
+  labs(x = "Bicycle type", y = "Trip Counts", title = "Trip counts by various subscribers using distinct bicycles", fill = "Subscribers")
+```
+
+
+```{r}
+ggplot(total_trip_by_months) + 
+  geom_col(aes(x=months,y=n, fill=n)) +
+  labs(x = "months", y = "Trip Counts", title = "Total trip counts on a monthly basis", fill = "Trip counts ") +
+  scale_fill_gradient(low="#f46d24", high="#07bb99")
+```
+
+
+ 
+```{r}
+ggplot(subscriber_by_month) + 
+  geom_col(aes(x=months,y=n, fill=n), position = "dodge") +
+  labs(x = "Month of the year", y = "Trip Counts", title = "Trip counts by various subscribers on a monthly basis", fill = "Subscribers") +
+  theme(axis.text.x = element_text(angle=42)) +
+  facet_grid(~subscribers) +
+  scale_fill_gradient(low="#f46d24", high="#07bb99")
+```
+
+
+
+```{r}
+ggplot(total_trip_by_days) + 
+  geom_col(aes(x=days_of_the_week,y=n, fill=n)) +
+  labs(x = "Days of the week", y = "Trip Counts", title = "Trip counts per day", fill = "Trip counts ") +
+  scale_fill_gradient(low="#f46d24", high="#07bb99")
+```
+
+
+
+Total number of trips made by different subscribers on a daily basis
+```{r}
+ggplot(subscriber_by_days) + 
+  geom_col(aes(x=days_of_the_week,y=n, fill=n), position = "dodge") +
+  labs(x = "Days of the week", y = "Trip Counts", title = "Trip counts by various subscribers on a daily basis", fill = "Subscribers") +
+  theme(axis.text.x = element_text(angle=30,hjust = 1)) +
+  facet_grid(~subscribers) +
+  scale_fill_gradient(low="#f46d24", high="#07bb99")
+```
+
+
+```{r}
+ggplot(trip_count_by_hours) + 
+  geom_line(aes(x=hours_of_the_day,y=n), color= "#9d19c0") +
+  labs(x = "Hours of the day", y = "Trip Counts", title = "Trip counts during each hour of the day") +
+  scale_x_continuous(breaks = c(0:23), labels=c("12am","1am","2am","3am","4am","5am","6am","7am","8am","9am","10am","11am","12pm","1pm","2pm","3pm","4pm","5pm","6pm","7pm","8pm","9pm","10pm","11pm")) +
+  theme(axis.text.x = element_text(angle=45,hjust = 1), plot.title = element_text(hjust = 0.4))
+```
+
+
+```{r}
+ggplot(subscriber_by_hours) + 
+  geom_line(aes(x=hours_of_the_day,y=n, color= subscribers)) +
+  labs(x = "Hours of the day", y = "Trip Counts", title = "Trip counts made by different subscriber during each hour of the day") +
+  scale_x_continuous(breaks = c(0:23), labels=c("12am","1am","2am","3am","4am","5am","6am","7am","8am","9am","10am","11am","12pm","1pm","2pm","3pm","4pm","5pm","6pm","7pm","8pm","9pm","10pm","11pm")) +
+  theme(axis.text.x = element_text(angle=45,hjust =0.8), plot.title = element_text(hjust = 0.4))
+```
+
+
+
+```{r}
+ggplot(avg_duration_by_subscribers) + 
+  geom_col(aes(x=subscribers,y=avg_trip_length, fill=subscribers)) +
+    geom_text(aes(x=subscribers,y=avg_trip_length,label = paste0( format(round(avg_trip_length,0)), "mins"),vjust=-0.2), color="#19c086") +
+  labs(x = "subscribers", y = "Average Trip Duration (minutes)", title = "Average Duration of trips for different subscribers", fill = "Subscribers")
+```
+
+
+
+```{r}
+ggplot(avg_daily_trip_length) + 
+  geom_col(aes(x=days_of_the_week,y=avg_trip_length, fill=avg_trip_length)) +
+    geom_text(aes(x=days_of_the_week,y=avg_trip_length,label = paste0( format(round(avg_trip_length,0)), "mins"),vjust=-0.2), color="darkgreen") +
+  labs(x = "Days of the week", y = "Average Trip Duration (minutes)", title = "Average Duration of trips on a daily basis") +
+  scale_fill_gradient(low="#f46d24", high="#07bb99")
+
+```
+
+
+
+```{r}
+ggplot(avg_daily_trip_length_by_subscribers) + 
+  geom_col(aes(x=days_of_the_week,y=avg_trip_length, fill=avg_trip_length), position = "dodge") +
+    geom_text(aes(x=days_of_the_week,y=avg_trip_length,label = paste0( format(round(avg_trip_length,0)), "mins"),vjust=1), color="darkgreen") +
+  labs(x = "Days of the week", y = "Average Trip Duration (minutes)", title = "Average Duration of trips for different subscriber on a daily basis") +
+  facet_grid(rows = vars(subscribers)) +
+  scale_fill_gradient(low="#f46d24", high="#07bb99")
+
+```
+
+
+```{r}
+ggplot(avg_monthly_trip_length) + 
+  geom_col(aes(x=months,y=avg_trip_length, fill=avg_trip_length)) +
+    geom_text(aes(x=months,y=avg_trip_length,label = paste0( format(round(avg_trip_length,1))),vjust=-0.2), color="darkgreen") +
+  labs(x = "Months of the year", y = "Average Trip Duration (minutes)", title = "Average Duration of trips on a monthly basis") +
+  scale_fill_gradient(low="#f46d24", high="#07bb99")
+
+```
+
+
+Average Duration of trips for different subscriber on a monthly basis
+```{r}
+ggplot(avg_monthly_trip_length_by_subscribers) + 
+  geom_col(aes(x=months,y=avg_trip_length, fill=avg_trip_length), position = "dodge") +
+    geom_text(aes(x=months,y=avg_trip_length,label = paste0( format(round(avg_trip_length,1))),vjust=1), color="darkgreen") +
+  labs(x = "months", y = "Average Trip Duration (minutes)", title = "Average Duration of trips for different subscriber on a monthly basis") +
+  facet_grid(rows = vars(subscribers)) +
+  scale_fill_gradient(low="#f46d24", high="#07bb99")
+
+```
+
+
+
+```{r}
+
+
+ggplot(avg_trip_length_by_bicycle_type) + 
+  geom_col(aes(x=bicycle_type,y=avg_trip_length, fill=bicycle_type)) +
+    geom_text(aes(x=bicycle_type,y=avg_trip_length,label = paste0( format(round(avg_trip_length,1)),"mins"),vjust=-0.2), color="darkgreen") +
+  labs(x = "Bicycle type", y = "Average Trip Duration (minutes)", title = "Average Duration of rides made with distinct bicycle") 
+```
+
+
+
+```{r}
+ggplot(avg_hourly_trip_length) + 
+  geom_line(aes(x=hours_of_the_day,y=avg_trip_length), color= "#9d19c0") +
+  labs(x = "Hours of the day", y = "Average Trip Duration (minutes)", title = "Average Trip Duration during each hour of the day") +
+  scale_x_continuous(breaks = c(0:23), labels=c("12am","1am","2am","3am","4am","5am","6am","7am","8am","9am","10am","11am","12pm","1pm","2pm","3pm","4pm","5pm","6pm","7pm","8pm","9pm","10pm","11pm")) +
+  theme(axis.text.x = element_text(angle=45,hjust = 1), plot.title = element_text(hjust = 0.4))
+```
+
+
+
+```{r}
+ggplot(avg_hourly_trip_length_by_subscribers) + 
+  geom_line(aes(x=hours_of_the_day,y=avg_trip_length, color= subscribers)) +
+  labs(x = "Hours of the day", y = "Average Trip Duration (minutes)", title = "Average Trip Duration by different subscribers during each hour of the day") +
+  scale_x_continuous(breaks = c(0:23), labels=c("12am","1am","2am","3am","4am","5am","6am","7am","8am","9am","10am","11am","12pm","1pm","2pm","3pm","4pm","5pm","6pm","7pm","8pm","9pm","10pm","11pm")) +
+  theme(axis.text.x = element_text(angle=45,hjust =0.8), plot.title = element_text(hjust = 0.3))
+```
+
+
+
+# Conclusions
+We have deduce some valuable insights and discern trends by analyzing the average trip duration and trip count of the Cyclistics Bike-Share Data. From this analytical process, we can derive the following conclusions based on the identified trends and insights.
+
+*	There is a high number of average trip duration by the casual riders despite the low number of rides and high number of annual subscribers.
+*	The docked bikes are used only by the casual riders and not used at all by the annual subscribers.
+*	The docked bike has the highest average duration which is almost equal to the sum or twice of the trip duration of the other two bike type despite its insignificant number of rides compared with the other bike type.
+*	Most of the annual subscribers used bicycles mostly on weekdays while most of the casual riders used bicycle on weekends. Therefore, the annual subscribers are assumed to be office workers while the casual riders are assumed to consist of student, children and people different from the above mention. Despite the high number of trip made by the annual subscribers the casual rider has the highest average trip duration i.e. the casual riders have a long ride since they are used to play and/or to go on errands any day while the annual subscribers are only used during the weekdays for a short time.
+*	The annual subscribers used the bicycles in the morning probably while going to work in the morning to avoid traffic jam between 7am – 9am and in the evening between 3pm – 7pm which is closing hour.
+*	There is a very high number of rides and high average duration trip in June, July, Aug due to the summer weather and slightly high in May and Sept which is towards the beginning of summer and end of summer While there is a very low ride and duration trip in the winter months especially from Nov to Feb.
+
+# Suggestions
+
+We have made conclusions based on the insights inferred and trends identified during the analysis process. Based on this conclusion, I will suggest the following so as to help in the new marketing strategy with the aim of maximizing the number of annual memberships for the company’s future success.
+
+* There is a need to convert the casual riders to annual subscribers.
+*	We should give discount to rider that subscribe as annual member towards the winter season.
+*	We can give one weekend free ride for annual subscribers.
+*	There can be free ride between 12pm to 5pm if riders subscribe as annual member.
+*	Any of the above mentioned can be utilized in the advertisement for annual subscription.
+*	This can also be specified to docked bike riders or we change the use of docked bike to annual subscription.
+*	We can also provide more bike station and/or bicycle for ease of getting bicycle especially for docked bike.
+*	Lastly, if we want to buy more bike or provide more bike to ride the docked bike should be 
+
